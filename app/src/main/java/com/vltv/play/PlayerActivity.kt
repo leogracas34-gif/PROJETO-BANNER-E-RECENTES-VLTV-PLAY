@@ -322,27 +322,22 @@ class PlayerActivity : AppCompatActivity() {
 
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
 
-        // CONFIGURAÇÃO TURBO (Para abrir filmes rápido)
-        val isLive = streamType == "live"
-        val minBufferMs = if (isLive) 2000 else 2000
-        val maxBufferMs = if (isLive) 5000 else 15000
-        val playBufferMs = 1000
-        val playRebufferMs = 2000
-
+        // 👇 AQUI ESTÁ A MÁGICA DA VELOCIDADE (OTIMIZAÇÃO CORRIGIDA) 👇
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                minBufferMs,
-                maxBufferMs,
-                playBufferMs,
-                playRebufferMs
+                15000, // Minimo: 15s (Para manter estável)
+                50000, // Máximo: 50s (Para carregar bastante filme à frente)
+                2500,  // PLAY: 2.5s (Começa assim que baixar 2.5s - MUITO RÁPIDO)
+                5000   // REBUFFER: 5s (Se travar, espera 5s para garantir que não trave de novo)
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
         player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
-            .setLoadControl(loadControl)
+            .setLoadControl(loadControl) // Aplica a otimização
             .build()
+        // 👆 FIM DA ALTERAÇÃO 👆
 
         playerView.player = player
 
