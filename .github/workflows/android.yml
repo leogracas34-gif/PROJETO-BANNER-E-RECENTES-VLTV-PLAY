@@ -1,4 +1,4 @@
-name: Android Build Oficial
+name: Android Build Oficial (Completo)
 
 on:
   push:
@@ -23,14 +23,14 @@ jobs:
       with:
         gradle-version: '8.2'
         
-    # Gera o APK (para teste) e o AAB (para a Play Store)
+    # 1. Gera os arquivos (APK e AAB)
     - name: Build Release App
       run: gradle bundleRelease assembleRelease -x lint --stacktrace
 
-    # Assina os arquivos
-    - name: Assinar o Aplicativo
+    # 2. Assina o AAB (Para a Play Store)
+    - name: Assinar AAB (Bundle)
       uses: r0adkll/sign-android-release@v1
-      id: sign_app
+      id: sign_aab
       with:
         releaseDirectory: app/build/outputs/bundle/release
         signingKeyBase64: ${{ secrets.SIGNING_KEY }}
@@ -38,16 +38,27 @@ jobs:
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-    # Upload do AAB (O que você vai subir na Play Store)
-    - name: Upload AAB Assinado (Play Store)
+    # 3. Assina o APK (Para instalar no Celular/TV)
+    - name: Assinar APK (Instalador)
+      uses: r0adkll/sign-android-release@v1
+      id: sign_apk
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+    # 4. Upload do AAB Assinado
+    - name: Download AAB (Play Store)
       uses: actions/upload-artifact@v4
       with:
-        name: VLTV-Play-Bundle-AAB
-        path: app/build/outputs/bundle/release/*.aab
+        name: VLTV-Play-PlayStore-AAB
+        path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
 
-    # Upload do APK (O que você instala na TV)
-    - name: Upload APK Assinado (Instalador)
+    # 5. Upload do APK Assinado
+    - name: Download APK (Instalador TV e Celular)
       uses: actions/upload-artifact@v4
       with:
         name: VLTV-Play-Instalador-APK
-        path: app/build/outputs/apk/release/*.apk
+        path: ${{ steps.sign_apk.outputs.signedReleaseFile }}
