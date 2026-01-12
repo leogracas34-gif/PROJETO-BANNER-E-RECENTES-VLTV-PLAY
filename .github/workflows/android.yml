@@ -1,4 +1,4 @@
-name: Android Build Oficial (Final v2)
+name: Android Build Oficial (Final Definitivo)
 
 on:
   push:
@@ -23,40 +23,44 @@ jobs:
       with:
         gradle-version: '8.2'
         
-    # 1. Gera os arquivos
+    # 1. Gera o APK e o AAB
     - name: Build Release App
       run: gradle bundleRelease assembleRelease -x lint --stacktrace
 
-    # 2. Assina o AAB (Nomes corrigidos para o plugin ilharp)
+    # 2. O TRUQUE: Instala a versão antiga da ferramenta que o assinador exige
+    - name: Install Build Tools 29.0.3
+      run: echo "y" | sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;29.0.3"
+
+    # 3. Assina o AAB (Bundle) - Voltamos para o r0adkll clássico
     - name: Assinar AAB (Bundle)
-      uses: ilharp/sign-android-release@v1
+      uses: r0adkll/sign-android-release@v1
       id: sign_aab
       with:
-        releaseDir: app/build/outputs/bundle/release
-        signingKey: ${{ secrets.SIGNING_KEY }}
-        keyAlias: ${{ secrets.ALIAS }}
+        releaseDirectory: app/build/outputs/bundle/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-    # 3. Assina o APK (Nomes corrigidos para o plugin ilharp)
+    # 4. Assina o APK (Instalador) - Voltamos para o r0adkll clássico
     - name: Assinar APK (Instalador)
-      uses: ilharp/sign-android-release@v1
+      uses: r0adkll/sign-android-release@v1
       id: sign_apk
       with:
-        releaseDir: app/build/outputs/apk/release
-        signingKey: ${{ secrets.SIGNING_KEY }}
-        keyAlias: ${{ secrets.ALIAS }}
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-    # 4. Upload do AAB Assinado
+    # 5. Upload do AAB Assinado
     - name: Download AAB (Play Store)
       uses: actions/upload-artifact@v4
       with:
         name: VLTV-Play-PlayStore-AAB
         path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
 
-    # 5. Upload do APK Assinado
+    # 6. Upload do APK Assinado
     - name: Download APK (Instalador TV e Celular)
       uses: actions/upload-artifact@v4
       with:
