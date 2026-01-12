@@ -13,7 +13,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.FitCenter
 import com.vltv.play.databinding.ActivityHomeBinding
 import com.vltv.play.DownloadHelper
 import kotlinx.coroutines.CoroutineScope
@@ -35,9 +34,9 @@ class HomeActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val windowInsetsController =
-        WindowCompat.getInsetsController(window, window.decorView)
+            WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
-        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
 
         // Receiver de downloads
@@ -48,7 +47,9 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        carregarBannerAleatorio()
+        
+        // Carrega o banner alternado (Filmes / Séries) otimizado para TV
+        carregarBannerAlternado()
 
         // --- CORREÇÃO DO TECLADO E BUSCA ---
         try {
@@ -197,9 +198,22 @@ class HomeActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun carregarBannerAleatorio() {
+    // --- NOVA LÓGICA: Alterna entre Filmes e Séries e Ajusta para TV ---
+    private fun carregarBannerAlternado() {
+        val prefs = getSharedPreferences("vltv_home_prefs", Context.MODE_PRIVATE)
+        
+        // 1. Verifica o que mostrou na última vez (Padrão: começa com 'tv')
+        val ultimoTipo = prefs.getString("ultimo_tipo_banner", "tv") ?: "tv"
+
+        // 2. Inverte a escolha
+        val tipoAtual = if (ultimoTipo == "tv") "movie" else "tv"
+
+        // 3. Salva a escolha atual para a próxima vez
+        prefs.edit().putString("ultimo_tipo_banner", tipoAtual).apply()
+
+        // 4. Monta a URL da API
         val urlString =
-            "https://api.themoviedb.org/3/trending/all/day?api_key=$TMDB_API_KEY&language=pt-BR"
+            "https://api.themoviedb.org/3/trending/$tipoAtual/day?api_key=$TMDB_API_KEY&language=pt-BR"
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -211,10 +225,13 @@ class HomeActivity : AppCompatActivity() {
                     val randomIndex = Random.nextInt(results.length())
                     val item = results.getJSONObject(randomIndex)
 
+                    // 5. Pega o título correto (filme usa 'title', série usa 'name')
                     val titulo = if (item.has("title"))
                         item.getString("title")
-                    else
+                    else if (item.has("name"))
                         item.getString("name")
+                    else 
+                        "Destaque"
 
                     val overview = if (item.has("overview"))
                         item.getString("overview")
@@ -222,17 +239,21 @@ class HomeActivity : AppCompatActivity() {
                         ""
 
                     val backdropPath = item.getString("backdrop_path")
+                    val prefixo = if (tipoAtual == "movie") "Filme em Alta: " else "Série em Alta: "
 
-                    if (backdropPath != "null") {
-                        val imageUrl = "https://image.tmdb.org/t/p/w1280$backdropPath"
+                    if (backdropPath != "null" && backdropPath.isNotBlank()) {
+                        
+                        // 6. Usa imagem ORIGINAL (Full HD/4K) para ficar bom na TV
+                        val imageUrl = "https://image.tmdb.org/t/p/original$backdropPath"
 
                         withContext(Dispatchers.Main) {
-                            binding.tvBannerTitle.text = titulo
+                            binding.tvBannerTitle.text = "$prefixo$titulo"
                             binding.tvBannerOverview.text = overview
 
+                            // 7. Carrega com CenterCrop para preencher a tela inteira sem bordas
                             Glide.with(this@HomeActivity)
                                 .load(imageUrl)
-                                .transform(FitCenter())
+                                .centerCrop() // O segredo para ajustar à tela da TV
                                 .placeholder(android.R.color.black)
                                 .into(binding.imgBanner)
                         }
