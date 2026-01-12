@@ -1,5 +1,4 @@
-
-name: Android Build
+name: Android Build Oficial (Assinado)
 
 on:
   push:
@@ -24,11 +23,24 @@ jobs:
       with:
         gradle-version: '8.2'
         
-    - name: Build with Gradle (Direct)
-      run: gradle assembleDebug --stacktrace
+    # Gera o arquivo APK de instalação
+    - name: Build Release APK
+      run: ./gradlew assembleRelease --stacktrace
 
-    - name: Upload APK
+    # Assina o APK usando os segredos que você acabou de criar
+    - name: Assinar App Oficial
+      uses: r0adkll/sign-android-release@v1
+      id: sign_app
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+    # Disponibiliza o APK pronto para você baixar
+    - name: Upload APK Assinado
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: VLTV-Play-Oficial-Assinado
+        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
