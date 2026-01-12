@@ -1,4 +1,4 @@
-name: Android Build Oficial (Completo)
+name: Android Build Oficial (Corrigido)
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
     - name: Build Release App
       run: gradle bundleRelease assembleRelease -x lint --stacktrace
 
-    # 2. Assina o AAB (Para a Play Store)
+    # 2. Assina o AAB (Para a Play Store) - Com correção de versão
     - name: Assinar AAB (Bundle)
       uses: r0adkll/sign-android-release@v1
       id: sign_aab
@@ -37,8 +37,9 @@ jobs:
         alias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
+        buildToolsVersion: '34.0.0'
 
-    # 3. Assina o APK (Para instalar no Celular/TV)
+    # 3. Assina o APK (Para instalar no Celular/TV) - Com correção de versão
     - name: Assinar APK (Instalador)
       uses: r0adkll/sign-android-release@v1
       id: sign_apk
@@ -48,6 +49,7 @@ jobs:
         alias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
+        buildToolsVersion: '34.0.0'
 
     # 4. Upload do AAB Assinado
     - name: Download AAB (Play Store)
