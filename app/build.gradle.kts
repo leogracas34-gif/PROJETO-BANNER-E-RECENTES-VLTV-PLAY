@@ -13,6 +13,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        // 👇 Linha incluída para compatibilidade com Celulares e TV Boxes
+        ndk { abiFilters("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
     }
 
     // 👇 ESTE É O BLOCO QUE ADICIONAMOS PARA IGNORAR O ERRO
