@@ -1,4 +1,4 @@
-name: Android Build
+name: Android Build Oficial
 
 on:
   push:
@@ -18,30 +18,36 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # Este passo baixa o Gradle automaticamente do repositório oficial
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
         gradle-version: '8.2'
         
-    # O segredo está no "-x lint" para ignorar o erro que apareceu antes
-    - name: Build with Gradle (Direct)
-      run: gradle assembleRelease -x lint --stacktrace
+    # Gera o APK (para teste) e o AAB (para a Play Store)
+    - name: Build Release App
+      run: gradle bundleRelease assembleRelease -x lint --stacktrace
 
-    # Assina o APK com as chaves que você salvou nos Secrets
+    # Assina os arquivos
     - name: Assinar o Aplicativo
       uses: r0adkll/sign-android-release@v1
       id: sign_app
       with:
-        releaseDirectory: app/build/outputs/apk/release
+        releaseDirectory: app/build/outputs/bundle/release
         signingKeyBase64: ${{ secrets.SIGNING_KEY }}
         alias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-    # Salva o arquivo final para você baixar
-    - name: Upload APK Assinado
+    # Upload do AAB (O que você vai subir na Play Store)
+    - name: Upload AAB Assinado (Play Store)
       uses: actions/upload-artifact@v4
       with:
-        name: app-vltv-play-assinado
-        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+        name: VLTV-Play-Bundle-AAB
+        path: app/build/outputs/bundle/release/*.aab
+
+    # Upload do APK (O que você instala na TV)
+    - name: Upload APK Assinado (Instalador)
+      uses: actions/upload-artifact@v4
+      with:
+        name: VLTV-Play-Instalador-APK
+        path: app/build/outputs/apk/release/*.apk
