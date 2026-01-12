@@ -18,16 +18,17 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    # Este passo baixa o Gradle automaticamente do repositório oficial
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
       with:
         gradle-version: '8.2'
         
-    # Comando original que você usa para baixar e compilar
+    # O segredo está no "-x lint" para ignorar o erro que apareceu antes
     - name: Build with Gradle (Direct)
-      run: gradle assembleRelease --stacktrace
+      run: gradle assembleRelease -x lint --stacktrace
 
-    # Bloco de Assinatura (incluído agora)
+    # Assina o APK com as chaves que você salvou nos Secrets
     - name: Assinar o Aplicativo
       uses: r0adkll/sign-android-release@v1
       id: sign_app
@@ -38,9 +39,9 @@ jobs:
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-    # Upload do arquivo final já assinado
+    # Salva o arquivo final para você baixar
     - name: Upload APK Assinado
       uses: actions/upload-artifact@v4
       with:
-        name: app-release-assinado
+        name: app-vltv-play-assinado
         path: ${{ steps.sign_app.outputs.signedReleaseFile }}
