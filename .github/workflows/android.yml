@@ -1,4 +1,4 @@
-name: Android Build Oficial (Final)
+name: Android Build Oficial (Final v2)
 
 on:
   push:
@@ -23,29 +23,29 @@ jobs:
       with:
         gradle-version: '8.2'
         
-    # 1. Gera os arquivos (APK e AAB)
+    # 1. Gera os arquivos
     - name: Build Release App
       run: gradle bundleRelease assembleRelease -x lint --stacktrace
 
-    # 2. Assina o AAB (Para a Play Store) - Usando plugin atualizado
+    # 2. Assina o AAB (Nomes corrigidos para o plugin ilharp)
     - name: Assinar AAB (Bundle)
       uses: ilharp/sign-android-release@v1
       id: sign_aab
       with:
-        releaseDirectory: app/build/outputs/bundle/release
-        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-        alias: ${{ secrets.ALIAS }}
+        releaseDir: app/build/outputs/bundle/release
+        signingKey: ${{ secrets.SIGNING_KEY }}
+        keyAlias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-    # 3. Assina o APK (Para instalar no Celular/TV) - Usando plugin atualizado
+    # 3. Assina o APK (Nomes corrigidos para o plugin ilharp)
     - name: Assinar APK (Instalador)
       uses: ilharp/sign-android-release@v1
       id: sign_apk
       with:
-        releaseDirectory: app/build/outputs/apk/release
-        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-        alias: ${{ secrets.ALIAS }}
+        releaseDir: app/build/outputs/apk/release
+        signingKey: ${{ secrets.SIGNING_KEY }}
+        keyAlias: ${{ secrets.ALIAS }}
         keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
 
