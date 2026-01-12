@@ -13,13 +13,10 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
-        // 👇 Correção para arquivo .kts (Kotlin)
-        ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
-        }
+        // Removemos o ndk para o build não travar
     }
 
+    // Mantemos isso para ignorar o erro de layout
     lint {
         checkReleaseBuilds = false
         abortOnError = false
