@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Button
@@ -56,28 +57,26 @@ class PlayerActivity : AppCompatActivity() {
 
     private var offlineUri: String? = null
 
-    // MOCHILA DE EPISÓDIOS
+    // MOCHILA DE EPISÓDIOS (Para saber a sequência dos IDs)
     private var episodeList = ArrayList<Int>()
 
-    // LISTA DE SERVIDORES (Principal + Backups)
+    // Lista de Backup (Sua lista original)
     private val serverBackupList = listOf(
         "http://tvblack.shop",
-        "http://fibercdn.sbs",
-        "http://firewallnaousardns.xyz:80"
+        "http://firewallnaousardns.xyz:80",
+        "http://fibercdn.sbs"
     )
 
+    // Lista Ativa
     private val activeServerList = mutableListOf<String>()
+
     private var serverIndex = 0
-    
-    // Lista de extensões para tentar (ts, m3u8, mp4, etc)
     private val extensoesTentativa = mutableListOf<String>()
     private var extIndex = 0
 
     private val USER_AGENT = "IPTVSmartersPro"
 
     private val handler = Handler(Looper.getMainLooper())
-    
-    // Checador de próximo episódio
     private val nextChecker = object : Runnable {
         override fun run() {
             val p = player ?: return
@@ -106,54 +105,55 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
 
-        // Configuração de Tela Cheia / Imersiva
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+
         window.decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
             View.SYSTEM_UI_FLAG_FULLSCREEN or
             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
 
-        // Vincular componentes da tela
         playerView = findViewById(R.id.playerView)
         loading = findViewById(R.id.loading)
         tvChannelName = findViewById(R.id.tvChannelName)
         tvNowPlaying = findViewById(R.id.tvNowPlaying)
         btnAspect = findViewById(R.id.btnAspect)
         topBar = findViewById(R.id.topBar)
+
         nextEpisodeContainer = findViewById(R.id.nextEpisodeContainer)
         tvNextEpisodeTitle = findViewById(R.id.tvNextEpisodeTitle)
         btnPlayNextEpisode = findViewById(R.id.btnPlayNextEpisode)
 
-        // Configurar foco do botão (para TV Box)
         btnPlayNextEpisode.isFocusable = true
         btnPlayNextEpisode.isFocusableInTouchMode = true
         btnPlayNextEpisode.setOnFocusChangeListener { _, hasFocus ->
             btnPlayNextEpisode.isSelected = hasFocus
         }
 
-        // Receber dados da Intent
         streamId = intent.getIntExtra("stream_id", 0)
         streamExtension = intent.getStringExtra("stream_ext") ?: "ts"
         streamType = intent.getStringExtra("stream_type") ?: "live"
         startPositionMs = intent.getLongExtra("start_position_ms", 0L)
         nextStreamId = intent.getIntExtra("next_stream_id", 0)
         nextChannelName = intent.getStringExtra("next_channel_name")
-        offlineUri = intent.getStringExtra("offline_uri")
 
+        // Pega a mochila
         val listaExtra = intent.getIntegerArrayListExtra("episode_list")
         if (listaExtra != null) {
             episodeList = listaExtra
         }
 
+        // Tenta descobrir o ID do próximo se não tiver
         calcularProximoEpisodioAutomaticamente()
+
+        offlineUri = intent.getStringExtra("offline_uri")
 
         val channelName = intent.getStringExtra("channel_name") ?: ""
         tvChannelName.text = if (channelName.isNotBlank()) channelName else "Canal"
+
         tvNowPlaying.text = if (streamType == "live") "Carregando programação..." else ""
 
-        // Botão de Aspecto (Zoom)
         btnAspect.setOnClickListener {
             val current = playerView.resizeMode
             val next = when (current) {
@@ -187,23 +187,13 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
-        // --- LÓGICA DE PRIORIDADE DE FORMATO (CORREÇÃO DE LENTIDÃO) ---
-        extensoesTentativa.clear()
-        if (streamType == "movie" || streamType == "series") {
-            // Servidores como fibercdn preferem m3u8. Colocamos primeiro.
-            extensoesTentativa.add("m3u8")
+        if (streamType == "movie") {
+            extensoesTentativa.add(streamExtension)
             extensoesTentativa.add("mp4")
             extensoesTentativa.add("mkv")
-            // Se a extensão original for diferente, adiciona no fim
-            if (streamExtension != "m3u8" && streamExtension != "mp4" && streamExtension != "mkv") {
-                extensoesTentativa.add(streamExtension)
-            }
-            // Adiciona ts como último recurso para vod
-            extensoesTentativa.add("ts")
         } else {
-            // Canais ao vivo
-            extensoesTentativa.add("ts")
             extensoesTentativa.add("m3u8")
+            extensoesTentativa.add("ts")
             extensoesTentativa.add("")
         }
 
@@ -225,16 +215,15 @@ class PlayerActivity : AppCompatActivity() {
         
         activeServerList.clear()
         
-        // Adiciona o DNS salvo pelo usuário primeiro
         if (savedDns.isNotEmpty()) {
-            val cleanDns = if (savedDns.endsWith("/")) savedDns.dropLast(1) else savedDns
+            var cleanDns = savedDns
+            if (cleanDns.endsWith("/")) cleanDns = cleanDns.dropLast(1)
             activeServerList.add(cleanDns)
         }
         
-        // Adiciona os backups
         for (server in serverBackupList) {
-            val cleanServer = if (server.endsWith("/")) server.dropLast(1) else server
-            // Evita duplicatas
+            var cleanServer = server
+            if (cleanServer.endsWith("/")) cleanServer = cleanServer.dropLast(1)
             if (cleanServer != savedDns && !savedDns.contains(cleanServer)) {
                 activeServerList.add(cleanServer)
             }
@@ -243,6 +232,7 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun calcularProximoEpisodioAutomaticamente() {
         if (nextStreamId != 0) return 
+
         if (episodeList.isNotEmpty() && streamType == "series") {
             val indexAtual = episodeList.indexOf(streamId)
             if (indexAtual != -1 && indexAtual < episodeList.size - 1) {
@@ -263,7 +253,6 @@ class PlayerActivity : AppCompatActivity() {
 
     @OptIn(UnstableApi::class)
     private fun iniciarPlayer() {
-        // MODO OFFLINE
         if (streamType == "vod_offline") {
             val uriStr = offlineUri
             if (uriStr.isNullOrBlank()) {
@@ -271,16 +260,13 @@ class PlayerActivity : AppCompatActivity() {
                 loading.visibility = View.GONE
                 return
             }
-
             player?.release()
             player = ExoPlayer.Builder(this).build()
             playerView.player = player
-
             val mediaItem = MediaItem.fromUri(Uri.parse(uriStr))
             player?.setMediaItem(mediaItem)
             player?.prepare()
             player?.playWhenReady = true
-
             player?.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     when (state) {
@@ -289,25 +275,24 @@ class PlayerActivity : AppCompatActivity() {
                     }
                 }
                 override fun onPlayerError(error: PlaybackException) {
-                    Toast.makeText(this@PlayerActivity, "Erro ao reproduzir arquivo offline.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@PlayerActivity, "Erro offline.", Toast.LENGTH_LONG).show()
                 }
             })
             return
         }
 
-        // VERIFICA SE EXISTEM SERVIDORES
         if (activeServerList.isEmpty()) {
-            Toast.makeText(this, "Erro: Nenhum servidor configurado.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Erro: Sem servidor.", Toast.LENGTH_LONG).show()
+            loading.visibility = View.GONE
             return
         }
 
-        // ROTAÇÃO DE SERVIDORES E EXTENSÕES
         if (extIndex >= extensoesTentativa.size) {
             serverIndex++
             extIndex = 0
             if (serverIndex >= activeServerList.size) {
-                serverIndex = 0 // Reinicia o ciclo ou para, dependendo da sua lógica. Aqui reinicia.
-                Toast.makeText(this, "Tentando reconectar...", Toast.LENGTH_SHORT).show()
+                serverIndex = 0 
+                Toast.makeText(this, "Reconectando...", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -329,21 +314,20 @@ class PlayerActivity : AppCompatActivity() {
 
         player?.release()
 
-        // --- CONFIGURAÇÃO DE REDE COM TIMEOUT AJUSTADO ---
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(USER_AGENT)
             .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(7000) // 7 Segundos: Se não conectar, pula para o próximo (Resolve lentidão)
-            .setReadTimeoutMs(10000)
+            .setConnectTimeoutMs(12000)
+            .setReadTimeoutMs(15000)
 
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
 
-        // --- CONFIGURAÇÃO DE BUFFER RÁPIDO ---
+        // CONFIGURAÇÃO TURBO (Para abrir filmes rápido)
         val isLive = streamType == "live"
-        val minBufferMs = if (isLive) 4000 else 8000
-        val maxBufferMs = if (isLive) 15000 else 40000
-        val playBufferMs = if (isLive) 1000 else 1500 // Início em 1.5s
-        val playRebufferMs = if (isLive) 2000 else 3000
+        val minBufferMs = if (isLive) 2000 else 2000
+        val maxBufferMs = if (isLive) 5000 else 15000
+        val playBufferMs = 1000
+        val playRebufferMs = 2000
 
         val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
             .setBufferDurationsMs(
@@ -367,7 +351,6 @@ class PlayerActivity : AppCompatActivity() {
             player?.setMediaItem(mediaItem)
             player?.prepare()
 
-            // RESUME: Volta de onde parou
             if (startPositionMs > 0L && (streamType == "movie" || streamType == "series")) {
                 player?.seekTo(startPositionMs)
             }
@@ -396,7 +379,6 @@ class PlayerActivity : AppCompatActivity() {
 
             override fun onPlayerError(error: PlaybackException) {
                 loading.visibility = View.VISIBLE
-                // Tenta o próximo servidor/extensão rapidamente
                 handler.postDelayed({ tentarProximo() }, 1000L)
             }
         })
@@ -407,29 +389,59 @@ class PlayerActivity : AppCompatActivity() {
         iniciarPlayer()
     }
 
+    // --- LÓGICA DE CORREÇÃO DO NOME DO EPISÓDIO ---
     private fun abrirProximoEpisodio() {
         if (nextStreamId == 0) return
 
-        // Tenta corrigir o título do próximo episódio (Opcional, mas útil)
         var novoTitulo = nextChannelName
         val tituloAtual = tvChannelName.text.toString()
+
+        // Se o nome for genérico, calculamos o número
         if (novoTitulo == null || novoTitulo.equals("Próximo Episódio", ignoreCase = true) || novoTitulo == tituloAtual) {
-            novoTitulo = tituloAtual // Simplificado para evitar erros de regex complexos
+            
+            // Regex procura: "E02", "E2", "Episodio 02"
+            val regex = Regex("(?i)(E|Episódio|Episodio|Episode)\\s*0*(\\d+)")
+            val match = regex.find(tituloAtual)
+            
+            if (match != null) {
+                try {
+                    val textoCompletoEncontrado = match.groupValues[0] // Ex: "E02"
+                    val prefixo = match.groupValues[1] // Ex: "E"
+                    val numeroStr = match.groupValues[2] // Ex: "2"
+                    
+                    val numeroAtual = numeroStr.toInt()
+                    val novoNumero = numeroAtual + 1
+                    
+                    // Mantém o zero na frente se tinha antes (Ex: "03")
+                    val novoNumeroStr = if (numeroStr.length > 1 && novoNumero < 10) 
+                        "0$novoNumero" else novoNumero.toString()
+                        
+                    // Substitui no texto original: "Lista Negra E02" -> "Lista Negra E03"
+                    novoTitulo = tituloAtual.replace(textoCompletoEncontrado, "$prefixo$novoNumeroStr")
+                    
+                } catch (e: Exception) {
+                    novoTitulo = tituloAtual // Falhou, mantém o atual
+                }
+            } else {
+                novoTitulo = tituloAtual // Não achou número, mantém o atual
+            }
         }
 
         val intent = Intent(this, PlayerActivity::class.java)
         intent.putExtra("stream_id", nextStreamId)
-        intent.putExtra("stream_ext", "mp4") // Reseta extensão
+        intent.putExtra("stream_ext", "mp4")
         intent.putExtra("stream_type", "series")
-        intent.putExtra("channel_name", novoTitulo)
+        intent.putExtra("channel_name", novoTitulo) // Usa o nome calculado
+        
         if (episodeList.isNotEmpty()) {
             intent.putIntegerArrayListExtra("episode_list", episodeList)
         }
+        
         startActivity(intent)
         finish()
     }
+    // ----------------------------------------------
 
-    // --- FUNÇÕES DE RESUME (MEMÓRIA DE ONDE PAROU) ---
     private fun getMovieKey(id: Int) = "movie_resume_$id"
 
     private fun saveMovieResume(id: Int, positionMs: Long, durationMs: Long) {
@@ -478,7 +490,6 @@ class PlayerActivity : AppCompatActivity() {
             .apply()
     }
 
-    // --- FUNÇÕES AUXILIARES ---
     private fun decodeBase64(text: String?): String {
         return try {
             if (text.isNullOrEmpty()) "" else String(
@@ -540,7 +551,6 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
-    // --- CONTROLE D-PAD (TV BOX) ---
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         val p = player ?: return super.onKeyDown(keyCode, event)
         
