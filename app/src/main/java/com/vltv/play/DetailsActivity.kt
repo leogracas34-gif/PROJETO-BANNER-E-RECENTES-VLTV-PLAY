@@ -67,7 +67,7 @@ class DetailsActivity : AppCompatActivity() {
     // Inclusão da variável do Elenco
     private lateinit var rvCast: RecyclerView
 
-    private var tvYear: TextView? = null
+    private lateinit var tvYear: TextView
     private var btnSettings: Button? = null
 
     private lateinit var episodesAdapter: EpisodesAdapter
