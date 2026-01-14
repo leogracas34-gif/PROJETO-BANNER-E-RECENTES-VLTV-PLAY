@@ -41,6 +41,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
     private lateinit var tvPlot: TextView
     private lateinit var btnSeasonSelector: TextView
     private lateinit var rvEpisodes: RecyclerView
+    private lateinit var rvCast: RecyclerView
     private lateinit var btnFavoriteSeries: ImageButton
 
     private lateinit var btnPlaySeries: Button
@@ -79,6 +80,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         tvPlot = findViewById(R.id.tvSeriesPlot)
         btnSeasonSelector = findViewById(R.id.btnSeasonSelector)
         rvEpisodes = findViewById(R.id.rvEpisodes)
+        rvCast = findViewById(R.id.rvCast)
         btnFavoriteSeries = findViewById(R.id.btnFavoriteSeries)
 
         btnPlaySeries = findViewById(R.id.btnPlaySeries)
@@ -95,7 +97,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         tvTitle.text = seriesName
         tvRating.text = "Nota: $seriesRating"
         tvGenre.text = "Gênero: Buscando..."
-        tvCast.text = "Elenco: Buscando..."
+        tvCast.text = "Elenco"
         tvPlot.text = "Carregando sinopse..."
 
         btnSeasonSelector.setBackgroundColor(Color.parseColor("#333333"))
@@ -209,7 +211,10 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         if (results != null && results.length() > 0) {
                             val show = results.getJSONObject(0)
                             buscarDetalhesTMDB(show.getInt("id"), apiKey)
+                            CastRepository.carregarElenco(seriesName, true) { lista ->
                             runOnUiThread {
+                                rvCast.adapter = CastAdapter(lista)
+                            }
                                 val sinopse = show.optString("overview")
                                 tvPlot.text = if (sinopse.isNotEmpty()) sinopse else "Sinopse indisponível."
                                 val vote = show.optDouble("vote_average", 0.0)
