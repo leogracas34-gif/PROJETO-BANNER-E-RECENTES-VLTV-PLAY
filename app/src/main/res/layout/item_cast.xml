@@ -8,7 +8,7 @@
     android:padding="8dp">
 
     <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/imgCast"
+        android:id="@+id/imgActor"
         android:layout_width="70dp"
         android:layout_height="70dp"
         android:scaleType="centerCrop"
@@ -16,7 +16,7 @@
         app:shapeAppearanceOverlay="@style/CircleImage" />
 
     <TextView
-        android:id="@+id/tvCastName"
+        android:id="@+id/tvActorName"
         android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
