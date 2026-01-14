@@ -138,46 +138,47 @@
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="20dp"
-                android:gravity="center_vertical">
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_marginTop="20dp"
+    android:gravity="center_vertical">
 
-                <Button
-                    android:id="@+id/btnPlay"
-                    android:layout_width="160dp"
-                    android:layout_height="50dp"
-                    android:background="@drawable/btn_white_rounded"
-                    android:text="ASSISTIR"
-                    android:textColor="#000000"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:focusable="true" />
+    <Button
+        android:id="@+id/btnPlay"
+        android:layout_width="160dp"
+        android:layout_height="48dp"
+        android:background="@drawable/btn_white_rounded"
+        android:text="ASSISTIR"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:focusable="true" />
 
-                <Button
-                    android:id="@+id/btnResume"
-                    android:layout_width="160dp"
-                    android:layout_height="50dp"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/btn_gray_rounded"
-                    android:text="CONTINUAR"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    android:focusable="true" />
+    <Button
+        android:id="@+id/btnResume"
+        android:layout_width="160dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="12dp"
+        android:background="@drawable/btn_gray_rounded"
+        android:text="CONTINUAR"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:focusable="true" />
 
-                <ImageButton
-                    android:id="@+id/btnFavorite"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_marginStart="10dp"
-                    android:src="@android:drawable/btn_star_big_off"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:focusable="true"
-                    app:tint="#FFFFFF" />
-            </LinearLayout>
+    <ImageButton
+        android:id="@+id/btnFavorite"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="12dp"
+        android:src="@android:drawable/btn_star_big_off"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="#FFFFFF"
+        android:focusable="true" />
+
+</LinearLayout>
 
             <LinearLayout
                 android:id="@+id/btnDownloadArea"
