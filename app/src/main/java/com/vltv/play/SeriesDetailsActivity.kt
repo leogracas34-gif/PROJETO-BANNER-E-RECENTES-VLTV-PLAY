@@ -48,7 +48,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
     private lateinit var btnDownloadEpisodeArea: LinearLayout
     private lateinit var imgDownloadEpisodeState: ImageView
     private lateinit var tvDownloadEpisodeState: TextView
-
     private lateinit var btnDownloadSeason: Button
 
     private var episodesBySeason: Map<String, List<EpisodeStream>> = emptyMap()
@@ -197,7 +196,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         val apiKey = "9b73f5dd15b8165b1b57419be2f29128"
         var cleanName = seriesName.replace(Regex("\\(\\d{4}\\)"), "")
         cleanName = cleanName.replace(Regex("[^A-Za-z0-9 ÁáÉéÍíÓóÚúÃãÕõÇç]"), "").trim()
-        val encodedName = try { URLEncoder.encode(cleanName, "UTF-8") } catch(e:Exception) { cleanName }
+        val encodedName = try { URLEncoder.encode(cleanName, "UTF-8") } catch(e: Exception) { cleanName }
         val url = "https://api.themoviedb.org/3/search/tv?api_key=$apiKey&query=$encodedName&language=pt-BR"
 
         client.newCall(Request.Builder().url(url).build()).enqueue(object : okhttp3.Callback {
@@ -218,25 +217,27 @@ class SeriesDetailsActivity : AppCompatActivity() {
                             // ✅ CORREÇÃO 1: TUDO que mexe na tela DENTRO do runOnUiThread
                             runOnUiThread {
                                 tvPlot.text = if (sinopse.isNotEmpty()) sinopse else "Sinopse indisponível."
-                                
                                 if (vote > 0) tvRating.text = "Nota: ${String.format("%.1f", vote)}"
                                 
                                 if (backdropPath.isNotEmpty() && imgBackground != imgPoster) {
                                     Glide.with(this@SeriesDetailsActivity)
                                         .load("https://image.tmdb.org/t/p/w1280$backdropPath")
-                                        .centerCrop().into(imgBackground)
+                                        .centerCrop()
+                                        .into(imgBackground)
                                 }
 
-                                // ✅ CastRepository também dentro do runOnUiThread
+                                // ✅ CastRepository dentro do runOnUiThread (REMOVIDO DUPLICADO)
                                 CastRepository.carregarElenco(seriesName, true) { lista ->
-                                    runOnUiThread {
-                                        rvCast.adapter = CastAdapter(lista)
+                                    runOnUiThread { 
+                                        rvCast.adapter = CastAdapter(lista) 
                                     }
                                 }
                             }
                             buscarDetalhesTMDB(showId, apiKey)
                         }
-                    } catch (e: Exception) {}
+                    } catch (e: Exception) {
+                        Log.e("TMDB", "Erro no processamento: ${e.message}")
+                    }
                 }
             }
         })
@@ -475,23 +476,32 @@ class SeriesDetailsActivity : AppCompatActivity() {
         setDownloadState(state, ep)
     }
 
-    class EpisodeAdapter(val list: List<EpisodeStream>, private val onClick: (EpisodeStream, Int) -> Unit) : RecyclerView.Adapter<EpisodeAdapter.VH>() {
+    class EpisodeAdapter(val list: List<EpisodeStream>, private val onClick: (EpisodeStream, Int) -> Unit) : 
+        RecyclerView.Adapter<EpisodeAdapter.VH>() {
+        
         class VH(v: View) : RecyclerView.ViewHolder(v) {
             val tvTitle: TextView = v.findViewById(R.id.tvEpisodeTitle)
             val imgThumb: ImageView? = v.findViewById(R.id.imgEpisodeThumb)
         }
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val v = LayoutInflater.from(parent.context).inflate(R.layout.item_episode, parent, false)
             return VH(v)
         }
+
         override fun onBindViewHolder(holder: VH, position: Int) {
             val ep = list[position]
             holder.tvTitle.text = "E${ep.episode_num.toString().padStart(2, '0')} - ${ep.title}"
             
             if (holder.imgThumb != null) {
-                Glide.with(holder.itemView.context).load(ep.info?.movie_image)
-                    .placeholder(android.R.drawable.ic_menu_gallery).error(android.R.color.darker_gray).centerCrop().into(holder.imgThumb)
+                Glide.with(holder.itemView.context)
+                    .load(ep.info?.movie_image)
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .error(android.R.color.darker_gray)
+                    .centerCrop()
+                    .into(holder.imgThumb)
             }
+            
             holder.itemView.setOnClickListener { onClick(ep, position) }
             holder.itemView.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
@@ -503,6 +513,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                 }
             }
         }
+
         override fun getItemCount() = list.size
     }
 }
