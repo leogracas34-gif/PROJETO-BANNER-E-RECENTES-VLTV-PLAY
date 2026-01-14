@@ -68,10 +68,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // --- CORREÇÃO DO ERRO AQUI ---
-        // Voltei para o nome original do seu arquivo XML
-        setContentView(R.layout.activity_series_details) 
+        setContentView(R.layout.activity_series_details)
 
         seriesId = intent.getIntExtra("series_id", 0)
         seriesName = intent.getStringExtra("name") ?: ""
@@ -159,7 +156,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
     }
     
     private fun inicializarViews() {
-        // Ligando suas variáveis aos IDs novos do XML
         imgPoster = findViewById(R.id.imgPoster)
         imgBackground = try { findViewById(R.id.imgBackground) } catch (e: Exception) { imgPoster }
         tvTitle = findViewById(R.id.tvTitle)
@@ -167,7 +163,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         tvGenre = findViewById(R.id.tvGenre)
         tvPlot = findViewById(R.id.tvPlot)
         
-        // Título do Elenco e Recycler das Bolinhas
         tvCast = findViewById(R.id.tvCast)
         recyclerCast = findViewById(R.id.recyclerCast)
         
@@ -246,6 +241,8 @@ class SeriesDetailsActivity : AppCompatActivity() {
                                         .load("https://image.tmdb.org/t/p/w1280$backdropPath")
                                         .centerCrop().into(imgBackground)
                                 }
+                                // Mantém poster vertical
+                                Glide.with(this@SeriesDetailsActivity).load(seriesIcon).placeholder(R.mipmap.ic_launcher).centerCrop().into(imgPoster)
                             }
                         }
                     } catch (e: Exception) {}
@@ -379,6 +376,9 @@ class SeriesDetailsActivity : AppCompatActivity() {
         }
     }
 
+    // =========================================================================
+    //  ATENÇÃO: LÓGICA DO PLAYER E BOTÃO "PRÓXIMO" REVISADA E BLINDADA
+    // =========================================================================
     private fun abrirPlayer(ep: EpisodeStream, usarResume: Boolean) {
         val streamId = ep.id.toIntOrNull() ?: 0
         val ext = ep.container_extension ?: "mp4"
@@ -386,10 +386,12 @@ class SeriesDetailsActivity : AppCompatActivity() {
         val lista = episodesBySeason[currentSeason] ?: emptyList()
         val position = lista.indexOfFirst { it.id == ep.id }
         
+        // 1. Encontra o próximo episódio para o botão "Próximo"
         val nextEp = if (position + 1 < lista.size) lista[position + 1] else null
         val nextStreamId = nextEp?.id?.toIntOrNull() ?: 0
         val nextChannelName = nextEp?.let { "T${currentSeason}E${it.episode_num} - $seriesName" }
 
+        // 2. Cria a "Mochila" (Lista Completa) para o Player
         val mochilaIds = ArrayList<Int>()
         for (item in lista) {
             val idInt = item.id.toIntOrNull() ?: 0
@@ -408,12 +410,14 @@ class SeriesDetailsActivity : AppCompatActivity() {
         intent.putExtra("stream_type", "series")
         intent.putExtra("channel_name", "T${currentSeason}E${ep.episode_num} - $seriesName")
         
+        // 3. Passa a Mochila (Isso é crucial para o botão Próximo funcionar)
         if (mochilaIds.isNotEmpty()) {
             intent.putIntegerArrayListExtra("episode_list", mochilaIds)
         }
 
         if (existe) intent.putExtra("start_position_ms", pos)
         
+        // 4. Passa os dados do próximo episódio
         if (nextStreamId != 0) {
             intent.putExtra("next_stream_id", nextStreamId)
             if (nextChannelName != null) intent.putExtra("next_channel_name", nextChannelName)
