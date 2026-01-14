@@ -169,7 +169,7 @@ class DetailsActivity : AppCompatActivity() {
         restaurarEstadoDownload()
 
         // Chama o repositório para carregar as bolinhas
-        CastRepository.carregarElenco(name) { lista ->
+        CastRepository.carregarElenco(name, isSeries) { lista ->
             runOnUiThread {
                 rvCast.adapter = CastAdapter(lista)
             }
