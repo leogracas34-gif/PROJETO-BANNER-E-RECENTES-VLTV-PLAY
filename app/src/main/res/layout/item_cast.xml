@@ -9,15 +9,15 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/imgActor"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:scaleType="centerCrop"
         android:background="#333333"
         app:shapeAppearanceOverlay="@style/CircleImage" />
 
     <TextView
         android:id="@+id/tvActorName"
-        android:layout_width="80dp"
+        android:layout_width="70dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
         android:ellipsize="end"
@@ -25,6 +25,6 @@
         android:maxLines="2"
         android:text="Nome"
         android:textColor="#FFFFFF"
-        android:textSize="12sp" />
+        android:textSize="11sp" />
 
 </LinearLayout>
