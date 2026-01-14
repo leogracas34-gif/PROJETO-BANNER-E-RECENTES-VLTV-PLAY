@@ -140,8 +140,8 @@ class DetailsActivity : AppCompatActivity() {
     private fun carregarConteudo() {
         tvTitle.text = name
         tvRating.text = "⭐ $rating"
-        tvGenre.text = "Gênero: Buscando..."
-        tvCast.text = "Elenco: Buscando..."
+        tvGenre.text = "Gênero: Carregando..."
+        tvCast.text = "Elenco:"
         tvPlot.text = "Carregando sinopse..."
         tvYear?.text = "" 
 
@@ -240,6 +240,7 @@ class DetailsActivity : AppCompatActivity() {
                             }
                         }
                         runOnUiThread {
+                            tvGenre.text = "Gênero: ${if (genresList.isEmpty()) "Diversos" else genresList.joinToString(", ")}"
                             findViewById<RecyclerView>(R.id.recyclerCast).apply {
                                 layoutManager = LinearLayoutManager(this@DetailsActivity, LinearLayoutManager.HORIZONTAL, false)
                                 adapter = CastAdapter(castMemberList)
