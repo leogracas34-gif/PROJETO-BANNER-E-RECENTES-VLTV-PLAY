@@ -70,14 +70,14 @@ class SeriesDetailsActivity : AppCompatActivity() {
         seriesIcon = intent.getStringExtra("icon")
         seriesRating = intent.getStringExtra("rating") ?: "0.0"
 
+        // ✅ CORREÇÃO 2: Vínculo direto SEM try/catch
         imgPoster = findViewById(R.id.imgPosterSeries)
-        imgBackground = try { findViewById(R.id.imgBackgroundSeries) } catch (e: Exception) { imgPoster }
-        tvCast = try { findViewById(R.id.tvSeriesCast) } catch (e: Exception) { findViewById(R.id.tvSeriesGenre) }
-
+        imgBackground = findViewById(R.id.imgBackgroundSeries)
         tvTitle = findViewById(R.id.tvSeriesTitle)
         tvRating = findViewById(R.id.tvSeriesRating)
         tvGenre = findViewById(R.id.tvSeriesGenre)
         tvPlot = findViewById(R.id.tvSeriesPlot)
+        tvCast = findViewById(R.id.tvSeriesCast)
         btnSeasonSelector = findViewById(R.id.btnSeasonSelector)
         rvEpisodes = findViewById(R.id.rvEpisodes)
         rvCast = findViewById(R.id.rvCast)
@@ -210,22 +210,31 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         val results = jsonObject.optJSONArray("results")
                         if (results != null && results.length() > 0) {
                             val show = results.getJSONObject(0)
-                            buscarDetalhesTMDB(show.getInt("id"), apiKey)
-                            CastRepository.carregarElenco(seriesName, true) { lista ->
+                            val showId = show.getInt("id")
+                            val sinopse = show.optString("overview")
+                            val vote = show.optDouble("vote_average", 0.0)
+                            val backdropPath = show.optString("backdrop_path")
+
+                            // ✅ CORREÇÃO 1: TUDO que mexe na tela DENTRO do runOnUiThread
                             runOnUiThread {
-                                rvCast.adapter = CastAdapter(lista)
-                            }
-                                val sinopse = show.optString("overview")
                                 tvPlot.text = if (sinopse.isNotEmpty()) sinopse else "Sinopse indisponível."
-                                val vote = show.optDouble("vote_average", 0.0)
+                                
                                 if (vote > 0) tvRating.text = "Nota: ${String.format("%.1f", vote)}"
-                                val backdropPath = show.optString("backdrop_path")
+                                
                                 if (backdropPath.isNotEmpty() && imgBackground != imgPoster) {
                                     Glide.with(this@SeriesDetailsActivity)
                                         .load("https://image.tmdb.org/t/p/w1280$backdropPath")
                                         .centerCrop().into(imgBackground)
                                 }
+
+                                // ✅ CastRepository também dentro do runOnUiThread
+                                CastRepository.carregarElenco(seriesName, true) { lista ->
+                                    runOnUiThread {
+                                        rvCast.adapter = CastAdapter(lista)
+                                    }
+                                }
                             }
+                            buscarDetalhesTMDB(showId, apiKey)
                         }
                     } catch (e: Exception) {}
                 }
@@ -253,6 +262,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         for (i in 0 until limit) castList.add(castArray.getJSONObject(i).getString("name"))
                     }
 
+                    // ✅ CORREÇÃO 3: runOnUiThread garantido
                     runOnUiThread {
                         tvGenre.text = "Gênero: ${if (genresList.isEmpty()) "Variados" else genresList.joinToString(", ")}"
                         tvCast.text = "Elenco: ${if (castList.isEmpty()) "Não informado" else castList.joinToString(", ")}"
@@ -334,9 +344,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         }
     }
 
-    // ==========================================
-    // AQUI ESTÁ A CORREÇÃO: "A MOCHILA"
-    // ==========================================
     private fun abrirPlayer(ep: EpisodeStream, usarResume: Boolean) {
         val streamId = ep.id.toIntOrNull() ?: 0
         val ext = ep.container_extension ?: "mp4"
@@ -344,13 +351,10 @@ class SeriesDetailsActivity : AppCompatActivity() {
         val lista = episodesBySeason[currentSeason] ?: emptyList()
         val position = lista.indexOfFirst { it.id == ep.id }
         
-        // Dados para o próximo imediato (legado)
         val nextEp = if (position + 1 < lista.size) lista[position + 1] else null
         val nextStreamId = nextEp?.id?.toIntOrNull() ?: 0
         val nextChannelName = nextEp?.let { "T${currentSeason}E${it.episode_num} - $seriesName" }
 
-        // 🎒 CRIAÇÃO DA MOCHILA (LISTA COMPLETA DE IDs)
-        // Isso garante que o player saiba TODOS os episódios futuros
         val mochilaIds = ArrayList<Int>()
         for (item in lista) {
             val idInt = item.id.toIntOrNull() ?: 0
@@ -369,7 +373,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         intent.putExtra("stream_type", "series")
         intent.putExtra("channel_name", "T${currentSeason}E${ep.episode_num} - $seriesName")
         
-        // Passa a Mochila
         if (mochilaIds.isNotEmpty()) {
             intent.putIntegerArrayListExtra("episode_list", mochilaIds)
         }
@@ -398,7 +401,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         return montarUrlStream(server, "series", user, pass, eid, ext)
     }
 
-    // Função auxiliar que faltava
     private fun montarUrlStream(server: String, streamType: String, user: String, pass: String, id: Int, ext: String): String {
         var base = if (server.endsWith("/")) server.dropLast(1) else server
         if (!base.startsWith("http")) base = "http://$base"
