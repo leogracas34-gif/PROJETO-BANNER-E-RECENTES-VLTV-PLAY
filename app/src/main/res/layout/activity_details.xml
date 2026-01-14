@@ -18,7 +18,7 @@
         android:layout_height="match_parent"
         android:background="@drawable/gradient_overlay" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
@@ -147,12 +147,12 @@
                 android:orientation="vertical"
                 android:layout_marginTop="20dp">
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnResume"
                     android:layout_width="180dp"
                     android:layout_height="50dp"
                     android:layout_marginBottom="10dp"
-                    android:background="@drawable/bg_premium_blue"
+                    android:background="@drawable/bg_btn_grey"
                     android:text="CONTINUAR"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
@@ -166,13 +166,13 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
-                    <Button
+                    <androidx.appcompat.widget.AppCompatButton
                         android:id="@+id/btnPlay"
                         android:layout_width="180dp"
                         android:layout_height="50dp"
-                        android:background="@drawable/bg_premium_blue"
+                        android:background="@drawable/bg_btn_white"
                         android:text="ASSISTIR"
-                        android:textColor="#FFFFFF"
+                        android:textColor="#000000"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:focusable="true" />
@@ -238,5 +238,5 @@
                 android:focusable="true" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </FrameLayout>
