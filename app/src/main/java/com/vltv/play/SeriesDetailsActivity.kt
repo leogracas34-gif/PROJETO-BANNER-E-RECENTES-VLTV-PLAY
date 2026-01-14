@@ -69,7 +69,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         seriesIcon = intent.getStringExtra("icon")
         seriesRating = intent.getStringExtra("rating") ?: "0.0"
 
-        // ✅ CORREÇÃO 2: Vínculo direto SEM try/catch
         imgPoster = findViewById(R.id.imgPosterSeries)
         imgBackground = findViewById(R.id.imgBackgroundSeries)
         tvTitle = findViewById(R.id.tvSeriesTitle)
@@ -112,7 +111,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         rvEpisodes.setHasFixedSize(true)
         rvEpisodes.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 4)
         
-        // Listener de foco
         rvEpisodes.addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
             override fun onChildViewAttachedToWindow(view: View) {
                 val holder = rvEpisodes.findContainingViewHolder(view) as? EpisodeAdapter.VH
@@ -202,42 +200,39 @@ class SeriesDetailsActivity : AppCompatActivity() {
         client.newCall(Request.Builder().url(url).build()).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: IOException) {}
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                val body = response.body()?.string()
-                if (body != null) {
-                    try {
-                        val jsonObject = JSONObject(body)
-                        val results = jsonObject.optJSONArray("results")
-                        if (results != null && results.length() > 0) {
-                            val show = results.getJSONObject(0)
-                            val showId = show.getInt("id")
-                            val sinopse = show.optString("overview")
-                            val vote = show.optDouble("vote_average", 0.0)
-                            val backdropPath = show.optString("backdrop_path")
+                val body = response.body()?.string() ?: return
+                try {
+                    val jsonObject = JSONObject(body)
+                    val results = jsonObject.optJSONArray("results")
+                    if (results != null && results.length() > 0) {
+                        val show = results.getJSONObject(0)
+                        val showId = show.getInt("id")
+                        val sinopse = show.optString("overview")
+                        val vote = show.optDouble("vote_average", 0.0)
+                        val backdropPath = show.optString("backdrop_path")
 
-                            // ✅ CORREÇÃO 1: TUDO que mexe na tela DENTRO do runOnUiThread
-                            runOnUiThread {
-                                tvPlot.text = if (sinopse.isNotEmpty()) sinopse else "Sinopse indisponível."
-                                if (vote > 0) tvRating.text = "Nota: ${String.format("%.1f", vote)}"
-                                
-                                if (backdropPath.isNotEmpty() && imgBackground != imgPoster) {
-                                    Glide.with(this@SeriesDetailsActivity)
-                                        .load("https://image.tmdb.org/t/p/w1280$backdropPath")
-                                        .centerCrop()
-                                        .into(imgBackground)
-                                }
+                        runOnUiThread {
+                            tvPlot.text = if (sinopse.isNotEmpty()) sinopse else "Sinopse indisponível."
+                            if (vote > 0) tvRating.text = "Nota: ${String.format("%.1f", vote)}"
+                            
+                            if (backdropPath.isNotEmpty() && imgBackground != imgPoster) {
+                                Glide.with(this@SeriesDetailsActivity)
+                                    .load("https://image.tmdb.org/t/p/w1280$backdropPath")
+                                    .centerCrop()
+                                    .into(imgBackground)
+                            }
 
-                                // ✅ CastRepository dentro do runOnUiThread (REMOVIDO DUPLICADO)
-                                CastRepository.carregarElenco(seriesName, true) { lista ->
-                                    runOnUiThread { 
-                                        rvCast.adapter = CastAdapter(lista) 
-                                    }
+                            // ✅ CORRETO: Carrega elenco DENTRO do runOnUiThread
+                            CastRepository.carregarElenco(seriesName, true) { lista ->
+                                runOnUiThread { 
+                                    rvCast.adapter = CastAdapter(lista) 
                                 }
                             }
-                            buscarDetalhesTMDB(showId, apiKey)
                         }
-                    } catch (e: Exception) {
-                        Log.e("TMDB", "Erro no processamento: ${e.message}")
+                        buscarDetalhesTMDB(showId, apiKey)
                     }
+                } catch (e: Exception) {
+                    Log.e("TMDB", "Erro no processamento: ${e.message}")
                 }
             }
         })
@@ -263,7 +258,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         for (i in 0 until limit) castList.add(castArray.getJSONObject(i).getString("name"))
                     }
 
-                    // ✅ CORREÇÃO 3: runOnUiThread garantido
                     runOnUiThread {
                         tvGenre.text = "Gênero: ${if (genresList.isEmpty()) "Variados" else genresList.joinToString(", ")}"
                         tvCast.text = "Elenco: ${if (castList.isEmpty()) "Não informado" else castList.joinToString(", ")}"
@@ -348,43 +342,32 @@ class SeriesDetailsActivity : AppCompatActivity() {
     private fun abrirPlayer(ep: EpisodeStream, usarResume: Boolean) {
         val streamId = ep.id.toIntOrNull() ?: 0
         val ext = ep.container_extension ?: "mp4"
-
         val lista = episodesBySeason[currentSeason] ?: emptyList()
         val position = lista.indexOfFirst { it.id == ep.id }
-        
         val nextEp = if (position + 1 < lista.size) lista[position + 1] else null
         val nextStreamId = nextEp?.id?.toIntOrNull() ?: 0
         val nextChannelName = nextEp?.let { "T${currentSeason}E${it.episode_num} - $seriesName" }
-
         val mochilaIds = ArrayList<Int>()
         for (item in lista) {
             val idInt = item.id.toIntOrNull() ?: 0
             if (idInt != 0) mochilaIds.add(idInt)
         }
-
         val prefs = getSharedPreferences("vltv_prefs", Context.MODE_PRIVATE)
         val keyBase = "series_resume_$streamId"
         val pos = prefs.getLong("${keyBase}_pos", 0L)
         val dur = prefs.getLong("${keyBase}_dur", 0L)
         val existe = usarResume && pos > 30_000L && dur > 0L && pos < (dur * 0.95).toLong()
-
         val intent = Intent(this, PlayerActivity::class.java)
         intent.putExtra("stream_id", streamId)
         intent.putExtra("stream_ext", ext)
         intent.putExtra("stream_type", "series")
         intent.putExtra("channel_name", "T${currentSeason}E${ep.episode_num} - $seriesName")
-        
-        if (mochilaIds.isNotEmpty()) {
-            intent.putIntegerArrayListExtra("episode_list", mochilaIds)
-        }
-
+        if (mochilaIds.isNotEmpty()) intent.putIntegerArrayListExtra("episode_list", mochilaIds)
         if (existe) intent.putExtra("start_position_ms", pos)
-        
         if (nextStreamId != 0) {
             intent.putExtra("next_stream_id", nextStreamId)
             if (nextChannelName != null) intent.putExtra("next_channel_name", nextChannelName)
         }
-        
         startActivity(intent)
     }
 
@@ -392,21 +375,11 @@ class SeriesDetailsActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("vltv_prefs", Context.MODE_PRIVATE)
         val user = prefs.getString("username", "") ?: ""
         val pass = prefs.getString("password", "") ?: ""
-
-        val serverList = listOf("http://tvblack.shop", "http://firewallnaousardns.xyz:80", "http://fibercdn.sbs")
-        val server = serverList.first()
-
+        val server = "http://tvblack.shop"
         val eid = ep.id.toIntOrNull() ?: 0
         val ext = ep.container_extension ?: "mp4"
-
-        return montarUrlStream(server, "series", user, pass, eid, ext)
-    }
-
-    private fun montarUrlStream(server: String, streamType: String, user: String, pass: String, id: Int, ext: String): String {
-        var base = if (server.endsWith("/")) server.dropLast(1) else server
-        if (!base.startsWith("http")) base = "http://$base"
         val output = if (ext.isEmpty()) "ts" else ext
-        return "$base/get.php?username=$user&password=$pass&type=$streamType&output=$output&id=$id"
+        return "$server/get.php?username=$user&password=$pass&type=series&output=$output&id=$eid"
     }
 
     private fun baixarTemporadaAtual(lista: List<EpisodeStream>) {
@@ -476,6 +449,11 @@ class SeriesDetailsActivity : AppCompatActivity() {
         setDownloadState(state, ep)
     }
 
+    private fun isTelevisionDevice(): Boolean {
+        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+        return uiModeManager.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+    }
+
     class EpisodeAdapter(val list: List<EpisodeStream>, private val onClick: (EpisodeStream, Int) -> Unit) : 
         RecyclerView.Adapter<EpisodeAdapter.VH>() {
         
@@ -492,7 +470,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: VH, position: Int) {
             val ep = list[position]
             holder.tvTitle.text = "E${ep.episode_num.toString().padStart(2, '0')} - ${ep.title}"
-            
             if (holder.imgThumb != null) {
                 Glide.with(holder.itemView.context)
                     .load(ep.info?.movie_image)
@@ -501,7 +478,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
                     .centerCrop()
                     .into(holder.imgThumb)
             }
-            
             holder.itemView.setOnClickListener { onClick(ep, position) }
             holder.itemView.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
