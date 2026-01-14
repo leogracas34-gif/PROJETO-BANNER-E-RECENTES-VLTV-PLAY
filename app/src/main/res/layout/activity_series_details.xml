@@ -133,24 +133,24 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnPlay"
                     android:layout_width="160dp"
                     android:layout_height="50dp"
-                    android:background="@drawable/bg_premium_blue"
+                    android:background="@drawable/bg_btn_white"
                     android:text="ASSISTIR"
-                    android:textColor="#FFFFFF"
+                    android:textColor="#000000"
                     android:textStyle="bold"
                     android:focusable="true"
                     android:nextFocusRight="@+id/btnResume"
                     android:nextFocusDown="@+id/btnSeasonSelector" />
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnResume"
                     android:layout_width="160dp"
                     android:layout_height="50dp"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_premium_blue"
+                    android:background="@drawable/bg_btn_grey"
                     android:text="CONTINUAR"
                     android:textColor="#FFFFFF"
                     android:textStyle="bold"
