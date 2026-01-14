@@ -24,7 +24,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.util.ArrayList
 
-// Importante: Certifique-se de que CastAdapter e CastMember estão no projeto (você usou em Filmes)
+// Importante: Certifique-se de que CastAdapter e CastMember estão no projeto
 import com.vltv.play.CastAdapter
 import com.vltv.play.CastMember
 
@@ -54,7 +54,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
     private lateinit var tvDownloadEpisodeState: TextView
 
     private lateinit var btnDownloadSeason: Button
-    private lateinit var btnResume: Button // Botão Continuar (Adicionado para compatibilidade com XML)
+    private lateinit var btnResume: Button // Botão Continuar
 
     private var episodesBySeason: Map<String, List<EpisodeStream>> = emptyMap()
     private var sortedSeasons: List<String> = emptyList()
@@ -68,15 +68,17 @@ class SeriesDetailsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Certifique-se que o XML tem esse nome. Se for activity_details_series, mude aqui.
-        setContentView(R.layout.activity_details_series) 
+        
+        // --- CORREÇÃO DO ERRO AQUI ---
+        // Voltei para o nome original do seu arquivo XML
+        setContentView(R.layout.activity_series_details) 
 
         seriesId = intent.getIntExtra("series_id", 0)
         seriesName = intent.getStringExtra("name") ?: ""
         seriesIcon = intent.getStringExtra("icon")
         seriesRating = intent.getStringExtra("rating") ?: "0.0"
 
-        inicializarViews() // Organizei os findViewByIds aqui para corrigir os IDs
+        inicializarViews() 
 
         if (isTelevisionDevice()) {
             btnDownloadEpisodeArea.visibility = View.GONE
@@ -86,7 +88,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         tvTitle.text = seriesName
         tvRating.text = "Nota: $seriesRating"
         tvGenre.text = "Gênero: Buscando..."
-        tvCast.text = "Elenco:" // Texto fixo, pois agora temos as bolinhas
+        tvCast.text = "Elenco:" 
         tvPlot.text = "Carregando sinopse..."
 
         btnSeasonSelector.setBackgroundColor(Color.parseColor("#333333"))
@@ -102,7 +104,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         rvEpisodes.setHasFixedSize(true)
         rvEpisodes.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 4)
         
-        // Listener de foco (Mantido original)
         rvEpisodes.addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
             override fun onChildViewAttachedToWindow(view: View) {
                 val holder = rvEpisodes.findContainingViewHolder(view) as? EpisodeAdapter.VH
@@ -145,57 +146,38 @@ class SeriesDetailsActivity : AppCompatActivity() {
             abrirPlayer(ep, false)
         }
         
-        // Botão Continuar (Resume)
         btnResume.setOnClickListener {
              val ep = currentEpisode ?: return@setOnClickListener
              abrirPlayer(ep, true)
         }
 
         restaurarEstadoDownload()
-        setupDownloadButtons() // Movido lógica de click para função para organizar
+        setupDownloadButtons() 
 
         carregarSeriesInfo()
         sincronizarDadosTMDB()
     }
     
     private fun inicializarViews() {
-        // --- CORREÇÃO DOS IDs (Ligando suas variáveis aos IDs novos do XML) ---
-        
-        // Antes: R.id.imgPosterSeries -> Agora: R.id.imgPoster
+        // Ligando suas variáveis aos IDs novos do XML
         imgPoster = findViewById(R.id.imgPoster)
-        
-        // Antes: R.id.imgBackgroundSeries -> Agora: R.id.imgBackground
         imgBackground = try { findViewById(R.id.imgBackground) } catch (e: Exception) { imgPoster }
-        
-        // Antes: R.id.tvSeriesTitle -> Agora: R.id.tvTitle
         tvTitle = findViewById(R.id.tvTitle)
-        
-        // Antes: R.id.tvSeriesRating -> Agora: R.id.tvRating
         tvRating = findViewById(R.id.tvRating)
-        
-        // Antes: R.id.tvSeriesGenre -> Agora: R.id.tvGenre
         tvGenre = findViewById(R.id.tvGenre)
-        
-        // Antes: R.id.tvSeriesPlot -> Agora: R.id.tvPlot
         tvPlot = findViewById(R.id.tvPlot)
         
         // Título do Elenco e Recycler das Bolinhas
         tvCast = findViewById(R.id.tvCast)
         recyclerCast = findViewById(R.id.recyclerCast)
         
-        // Seletor e Lista de Episódios
         btnSeasonSelector = findViewById(R.id.btnSeasonSelector)
-        // O XML novo usa recyclerEpisodes, mas sua variável é rvEpisodes. Fiz a ligação:
         rvEpisodes = findViewById(R.id.recyclerEpisodes) 
         
-        // Botões de Ação
-        // O XML novo usa btnPlay e btnFavorite
         btnPlaySeries = findViewById(R.id.btnPlay)
         btnFavoriteSeries = findViewById(R.id.btnFavorite)
-        btnResume = findViewById(R.id.btnResume) // Novo botão do XML
+        btnResume = findViewById(R.id.btnResume) 
         
-        // Área de Download
-        // O XML novo usa btnDownloadArea, imgDownloadState, tvDownloadState
         btnDownloadEpisodeArea = findViewById(R.id.btnDownloadArea)
         imgDownloadEpisodeState = findViewById(R.id.imgDownloadState)
         tvDownloadEpisodeState = findViewById(R.id.tvDownloadState)
@@ -252,10 +234,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         val results = jsonObject.optJSONArray("results")
                         if (results != null && results.length() > 0) {
                             val show = results.getJSONObject(0)
-                            
-                            // Chama a busca completa (Elenco e Gênero)
                             buscarDetalhesTMDB(show.getInt("id"), apiKey)
-                            
                             runOnUiThread {
                                 val sinopse = show.optString("overview")
                                 tvPlot.text = if (sinopse.isNotEmpty()) sinopse else "Sinopse indisponível."
@@ -284,15 +263,13 @@ class SeriesDetailsActivity : AppCompatActivity() {
                 try {
                     val d = JSONObject(body)
                     
-                    // GÊNEROS
                     val gs = d.optJSONArray("genres")
                     val genresList = mutableListOf<String>()
                     if (gs != null) for (i in 0 until gs.length()) genresList.add(gs.getJSONObject(i).getString("name"))
 
-                    // ELENCO (Bolinhas)
                     val credits = d.optJSONObject("credits")
                     val castArray = credits?.optJSONArray("cast")
-                    val castMemberList = mutableListOf<CastMember>() // Lista para as bolinhas
+                    val castMemberList = mutableListOf<CastMember>()
                     
                     if (castArray != null) {
                         val limit = if (castArray.length() > 10) 10 else castArray.length()
@@ -307,8 +284,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         tvGenre.text = "Gênero: ${if (genresList.isEmpty()) "Variados" else genresList.joinToString(", ")}"
-                        
-                        // Configura as bolinhas do elenco (NOVO)
                         recyclerCast.apply {
                             layoutManager = LinearLayoutManager(this@SeriesDetailsActivity, LinearLayoutManager.HORIZONTAL, false)
                             adapter = CastAdapter(castMemberList)
@@ -322,15 +297,9 @@ class SeriesDetailsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         restaurarEstadoDownload()
-        // Verifica resume para mostrar botão CONTINUAR se necessário
-        if (currentEpisode != null) {
-             // Lógica opcional para botão resume se quiser ativar
-        }
     }
     
-    // Funções auxiliares (isTelevisionDevice)
     private fun isTelevisionDevice() = packageManager.hasSystemFeature("android.software.leanback") || packageManager.hasSystemFeature("android.hardware.type.television")
-
 
     private fun getFavSeries(context: Context): MutableSet<Int> {
         val prefs = context.getSharedPreferences("vltv_prefs", Context.MODE_PRIVATE)
@@ -392,7 +361,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
             currentEpisode = lista.first()
             restaurarEstadoDownload()
             
-            // Verifica resume para o botão Continuar
             val prefs = getSharedPreferences("vltv_prefs", Context.MODE_PRIVATE)
             val streamId = currentEpisode?.id?.toIntOrNull() ?: 0
             val pos = prefs.getLong("series_resume_${streamId}_pos", 0L)
@@ -402,7 +370,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
             currentEpisode = ep
             restaurarEstadoDownload()
             
-            // Atualiza visibilidade do botão resume ao clicar no ep
             val prefs = getSharedPreferences("vltv_prefs", Context.MODE_PRIVATE)
             val streamId = ep.id.toIntOrNull() ?: 0
             val pos = prefs.getLong("series_resume_${streamId}_pos", 0L)
@@ -412,10 +379,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         }
     }
 
-    // ==========================================
-    // LÓGICA DA MOCHILA E PRÓXIMO EPISÓDIO
-    // (Mantida intacta conforme solicitado)
-    // ==========================================
     private fun abrirPlayer(ep: EpisodeStream, usarResume: Boolean) {
         val streamId = ep.id.toIntOrNull() ?: 0
         val ext = ep.container_extension ?: "mp4"
@@ -423,12 +386,10 @@ class SeriesDetailsActivity : AppCompatActivity() {
         val lista = episodesBySeason[currentSeason] ?: emptyList()
         val position = lista.indexOfFirst { it.id == ep.id }
         
-        // Dados para o próximo imediato (legado)
         val nextEp = if (position + 1 < lista.size) lista[position + 1] else null
         val nextStreamId = nextEp?.id?.toIntOrNull() ?: 0
         val nextChannelName = nextEp?.let { "T${currentSeason}E${it.episode_num} - $seriesName" }
 
-        // 🎒 MOCHILA (LISTA COMPLETA DE IDs)
         val mochilaIds = ArrayList<Int>()
         for (item in lista) {
             val idInt = item.id.toIntOrNull() ?: 0
@@ -447,7 +408,6 @@ class SeriesDetailsActivity : AppCompatActivity() {
         intent.putExtra("stream_type", "series")
         intent.putExtra("channel_name", "T${currentSeason}E${ep.episode_num} - $seriesName")
         
-        // Passa a Mochila
         if (mochilaIds.isNotEmpty()) {
             intent.putIntegerArrayListExtra("episode_list", mochilaIds)
         }
