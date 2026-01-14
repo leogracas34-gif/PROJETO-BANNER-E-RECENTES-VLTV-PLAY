@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -106,10 +107,16 @@ class SeriesDetailsActivity : AppCompatActivity() {
             .centerCrop()
             .into(imgPoster)
 
+        // ✅ CONFIGURAÇÃO COMPLETA DOS RECYCLERVIEWS
         rvEpisodes.isFocusable = true
         rvEpisodes.isFocusableInTouchMode = true
         rvEpisodes.setHasFixedSize(true)
-        rvEpisodes.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 4)
+        rvEpisodes.layoutManager = GridLayoutManager(this, 4)
+        
+        // ✅ CONFIGURAÇÃO DO RECYCLERVIEW DO ELENCO (CORREÇÃO PRINCIPAL)
+        rvCast.isFocusable = false
+        rvCast.setHasFixedSize(true)
+        rvCast.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         
         rvEpisodes.addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
             override fun onChildViewAttachedToWindow(view: View) {
@@ -222,7 +229,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                                     .into(imgBackground)
                             }
 
-                            // ✅ CORRETO: Carrega elenco DENTRO do runOnUiThread
+                            // ✅ CARREGA ELENCO NO RECYCLERVIEW
                             CastRepository.carregarElenco(seriesName, true) { lista ->
                                 runOnUiThread { 
                                     rvCast.adapter = CastAdapter(lista) 
