@@ -29,6 +29,8 @@ import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 import java.net.URLEncoder
+import com.vltv.play.CastMember
+import com.vltv.play.CastAdapter
 
 data class EpisodeData(
     val streamId: Int,
@@ -226,15 +228,24 @@ class DetailsActivity : AppCompatActivity() {
                             for (i in 0 until gs.length()) genresList.add(gs.getJSONObject(i).getString("name"))
                         }
                         val castArray = d.optJSONObject("credits")?.optJSONArray("cast")
-                        val castList = mutableListOf<String>()
+                        val castMemberList = mutableListOf<CastMember>()
                         if (castArray != null) {
-                            val limit = if (castArray.length() > 5) 5 else castArray.length()
-                            for (i in 0 until limit) castList.add(castArray.getJSONObject(i).getString("name"))
+                            val limit = if (castArray.length() > 10) 10 else castArray.length()
+                            for (i in 0 until limit) {
+                                val actorJson = castArray.getJSONObject(i)
+                                castMemberList.add(CastMember(
+                                    actorJson.getString("name"),
+                                    actorJson.optString("profile_path")
+                                ))
+                            }
                         }
                         runOnUiThread {
-                            tvGenre.text = "Gênero: ${if (genresList.isEmpty()) "Diversos" else genresList.joinToString(", ")}"
-                            tvCast.text = "Elenco: ${if (castList.isEmpty()) "Não informado" else castList.joinToString(", ")}"
+                            findViewById<RecyclerView>(R.id.recyclerCast).apply {
+                                layoutManager = LinearLayoutManager(this@DetailsActivity, LinearLayoutManager.HORIZONTAL, false)
+                                adapter = CastAdapter(castMemberList)
+                            }
                         }
+                        
                     } catch (e: Exception) { e.printStackTrace() }
                 }
             }
