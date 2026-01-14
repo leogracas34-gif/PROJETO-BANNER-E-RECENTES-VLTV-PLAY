@@ -64,6 +64,9 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var tvEpisodesTitle: TextView
     private lateinit var recyclerEpisodes: RecyclerView
     
+    // Inclusão da variável do Elenco
+    private lateinit var rvCast: RecyclerView
+
     private var tvYear: TextView? = null
     private var btnSettings: Button? = null
 
@@ -86,11 +89,11 @@ class DetailsActivity : AppCompatActivity() {
         isSeries = intent.getBooleanExtra("is_series", false)
 
         inicializarViews()
+        setupCastRecycler() // Configura o Layout do Elenco
         carregarConteudo()
         setupEventos()
         setupEpisodesRecycler()
 
-        // Inicia a busca
         sincronizarDadosTMDB()
     }
 
@@ -122,12 +125,14 @@ class DetailsActivity : AppCompatActivity() {
         recyclerEpisodes = findViewById(R.id.recyclerEpisodes)
         tvYear = findViewById(R.id.tvYear)
         btnSettings = findViewById(R.id.btnSettings)
+        
+        // Inicializa o RecyclerView do Elenco
+        rvCast = findViewById(R.id.rvCast)
 
         if (isTelevisionDevice()) {
             btnDownloadArea.visibility = View.GONE
         }
 
-        // --- Configuração de Foco para TV ---
         btnPlay.isFocusable = true
         btnResume.isFocusable = true
         btnFavorite.isFocusable = true
@@ -135,11 +140,15 @@ class DetailsActivity : AppCompatActivity() {
         btnPlay.requestFocus()
     }
 
+    private fun setupCastRecycler() {
+        rvCast.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+    }
+
     private fun carregarConteudo() {
         tvTitle.text = name
         tvRating.text = "⭐ $rating"
         tvGenre.text = "Gênero: Buscando..."
-        tvCast.text = "Elenco: Buscando..."
+        tvCast.text = "ELENCO" 
         tvPlot.text = "Carregando sinopse..."
         tvYear?.text = "" 
 
@@ -158,6 +167,13 @@ class DetailsActivity : AppCompatActivity() {
 
         verificarResume()
         restaurarEstadoDownload()
+
+        // Chama o repositório para carregar as bolinhas
+        CastRepository.carregarElenco(name) { lista ->
+            runOnUiThread {
+                rvCast.adapter = CastAdapter(lista)
+            }
+        }
     }
 
     private fun sincronizarDadosTMDB() {
@@ -183,12 +199,6 @@ class DetailsActivity : AppCompatActivity() {
                 if (body != null) {
                     try {
                         val jsonObject = JSONObject(body)
-                        if (jsonObject.has("status_message")) {
-                             val msg = jsonObject.optString("status_message")
-                             runOnUiThread { tvPlot.text = "Erro API: $msg" }
-                             return
-                        }
-
                         val results = jsonObject.optJSONArray("results")
                         if (results != null && results.length() > 0) {
                             val movie = results.getJSONObject(0)
@@ -213,7 +223,7 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun buscarDetalhesCompletos(id: Int, type: String, key: String) {
-        val detailUrl = "https://api.themoviedb.org/3/$type/$id?api_key=$key&append_to_response=credits&language=pt-BR"
+        val detailUrl = "https://api.themoviedb.org/3/$type/$id?api_key=$key&language=pt-BR"
         client.newCall(Request.Builder().url(detailUrl).build()).enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body()?.string()
@@ -225,15 +235,8 @@ class DetailsActivity : AppCompatActivity() {
                         if (gs != null) {
                             for (i in 0 until gs.length()) genresList.add(gs.getJSONObject(i).getString("name"))
                         }
-                        val castArray = d.optJSONObject("credits")?.optJSONArray("cast")
-                        val castList = mutableListOf<String>()
-                        if (castArray != null) {
-                            val limit = if (castArray.length() > 5) 5 else castArray.length()
-                            for (i in 0 until limit) castList.add(castArray.getJSONObject(i).getString("name"))
-                        }
                         runOnUiThread {
                             tvGenre.text = "Gênero: ${if (genresList.isEmpty()) "Diversos" else genresList.joinToString(", ")}"
-                            tvCast.text = "Elenco: ${if (castList.isEmpty()) "Não informado" else castList.joinToString(", ")}"
                         }
                     } catch (e: Exception) { e.printStackTrace() }
                 }
@@ -253,7 +256,6 @@ class DetailsActivity : AppCompatActivity() {
         recyclerEpisodes.apply {
             layoutManager = if (isTelevisionDevice()) GridLayoutManager(this@DetailsActivity, 6) else LinearLayoutManager(this@DetailsActivity, LinearLayoutManager.HORIZONTAL, false)
             adapter = episodesAdapter
-            // Crucial para navegar na lista de episódios
             descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         }
     }
@@ -266,7 +268,6 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun setupEventos() {
-        // --- Efeito Zoom Controle Remoto ---
         val zoomFocus = View.OnFocusChangeListener { v, hasFocus ->
             v.scaleX = if (hasFocus) 1.1f else 1.0f
             v.scaleY = if (hasFocus) 1.1f else 1.0f
@@ -382,13 +383,11 @@ class DetailsActivity : AppCompatActivity() {
         
         inner class ViewHolder(val v: View) : RecyclerView.ViewHolder(v) {
             fun bind(e: EpisodeData) {
-                // Foco e Zoom nos episódios
                 v.isFocusable = true
                 v.setOnFocusChangeListener { _, hasFocus ->
                     v.scaleX = if (hasFocus) 1.1f else 1.0f
                     v.scaleY = if (hasFocus) 1.1f else 1.0f
                 }
-                
                 v.findViewById<TextView>(R.id.tvEpisodeTitle).text = "S${e.season}E${e.episode}: ${e.title}"
                 Glide.with(v.context).load(e.thumb).centerCrop().into(v.findViewById(R.id.imgEpisodeThumb))
                 v.setOnClickListener { onEpisodeClick(e) }
