@@ -6,7 +6,7 @@
     android:background="#101010">
 
     <ImageView
-        android:id="@+id/imgBackgroundSeries"
+        android:id="@+id/imgBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
@@ -43,7 +43,7 @@
                     app:cardElevation="4dp">
 
                     <ImageView
-                        android:id="@+id/imgPosterSeries"
+                        android:id="@+id/imgPoster"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop" />
@@ -56,7 +56,7 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/tvSeriesTitle"
+                        android:id="@+id/tvTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
@@ -67,7 +67,7 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvSeriesRating"
+                        android:id="@+id/tvRating"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
@@ -80,7 +80,7 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvSeriesGenre"
+                        android:id="@+id/tvGenre"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
@@ -100,7 +100,7 @@
                         android:textSize="13sp" />
 
                     <TextView
-                        android:id="@+id/tvSeriesPlot"
+                        android:id="@+id/tvPlot"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
@@ -112,27 +112,61 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/tvCast"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Elenco:"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerCast"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
                 android:layout_marginBottom="20dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <Button
-                    android:id="@+id/btnPlaySeries"
-                    android:layout_width="180dp"
+                    android:id="@+id/btnPlay"
+                    android:layout_width="160dp"
                     android:layout_height="50dp"
                     android:background="@drawable/bg_premium_blue"
                     android:text="ASSISTIR"
                     android:textColor="#FFFFFF"
                     android:textStyle="bold"
                     android:focusable="true"
-                    android:nextFocusRight="@+id/btnFavoriteSeries"
+                    android:nextFocusRight="@+id/btnResume"
+                    android:nextFocusDown="@+id/btnSeasonSelector" />
+
+                <Button
+                    android:id="@+id/btnResume"
+                    android:layout_width="160dp"
+                    android:layout_height="50dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_premium_blue"
+                    android:text="CONTINUAR"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    android:focusable="true"
+                    android:nextFocusLeft="@+id/btnPlay"
+                    android:nextFocusRight="@+id/btnFavorite"
                     android:nextFocusDown="@+id/btnSeasonSelector" />
 
                 <ImageButton
-                    android:id="@+id/btnFavoriteSeries"
+                    android:id="@+id/btnFavorite"
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:layout_marginStart="16dp"
@@ -140,7 +174,7 @@
                     android:src="@android:drawable/btn_star_big_off"
                     android:tint="#FFFFFF"
                     android:focusable="true"
-                    android:nextFocusLeft="@+id/btnPlaySeries"
+                    android:nextFocusLeft="@+id/btnResume"
                     android:nextFocusDown="@+id/btnSeasonSelector"
                     android:contentDescription="Favoritar" />
             </LinearLayout>
@@ -149,12 +183,23 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:orientation="horizontal">
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvEpisodesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Episódios"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/btnSeasonSelector"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:background="#333333"
                     android:clickable="true"
                     android:focusable="true"
@@ -164,12 +209,12 @@
                     android:textColor="#FFFFFF"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:nextFocusUp="@+id/btnPlaySeries"
-                    android:nextFocusDown="@+id/rvEpisodes" />
+                    android:nextFocusUp="@+id/btnPlay"
+                    android:nextFocusDown="@+id/recyclerEpisodes" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvEpisodes"
+                android:id="@+id/recyclerEpisodes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
@@ -177,9 +222,13 @@
                 android:focusable="true"
                 android:nextFocusUp="@+id/btnSeasonSelector" />
 
-            <LinearLayout android:id="@+id/btnDownloadSeriesArea" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone">
-                <ImageView android:id="@+id/imgDownloadSeriesState" android:layout_width="0dp" android:layout_height="0dp" />
-                <TextView android:id="@+id/tvDownloadSeriesState" android:layout_width="0dp" android:layout_height="0dp" />
+            <LinearLayout
+                android:id="@+id/btnDownloadArea"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone">
+                <ImageView android:id="@+id/imgDownloadState" android:layout_width="0dp" android:layout_height="0dp" />
+                <TextView android:id="@+id/tvDownloadState" android:layout_width="0dp" android:layout_height="0dp" />
             </LinearLayout>
             <Button android:id="@+id/btnDownloadSeason" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
 
