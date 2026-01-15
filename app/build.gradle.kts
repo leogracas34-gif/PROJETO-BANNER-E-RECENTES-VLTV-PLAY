@@ -9,10 +9,12 @@ android {
 
     defaultConfig {
         applicationId = "com.vltv.play"
-        minSdk = 24
+        minSdk = 21
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        
+        multiDexEnabled = true
         // Removemos o ndk para o build não travar
     }
 
@@ -45,6 +47,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.multidex:multidex:2.0.1")
 
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
